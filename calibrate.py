@@ -214,6 +214,8 @@ def main():
             for button, value in guncon.update():
                 if button == ecodes.BTN_LEFT and value == 1:
                     trigger = True
+                if button in (ecodes.BTN_RIGHT, ecodes.BTN_MIDDLE) and value == 1:
+                    running = False
 
             raw_pos_txt = font.render(f"({raw_x}, {raw_y})", True, (128, 128, 255))
             cal_pos_txt = font.render(f"({cx}, {cy})", True, (128, 128, 255))
