@@ -150,7 +150,8 @@ def main():
             raise ValueError("{} is an invalid point".format(value))
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("-r", "--resolution", default="320x240")
+    # parser.add_argument("-r", "--resolution", default="320x240")
+    parser.add_argument("-r", "--resolution")
     parser.add_argument("--center-target", default=(160, 120), type=point_type)
     parser.add_argument("--topleft-target", default=(50, 50), type=point_type)
     parser.add_argument("--capture", default=None)
@@ -158,12 +159,13 @@ def main():
 
     logging.basicConfig(level=logging.INFO)
 
-    try:
-        w, h = args.resolution.split("x")
-        width, height = int(w), int(h)
-    except:
-        parser.error("Invalid resolution, eg. 320x240")
-        return
+    if args.resolution:
+        try:
+            w, h = args.resolution.split("x")
+            width, height = int(w), int(h)
+        except:
+            parser.error("Invalid resolution, eg. 320x240")
+            return
 
     guncon2_dev = None
     # find the first guncon2
@@ -176,11 +178,17 @@ def main():
         sys.stderr.write("Failed to find any attached GunCon2 devices")
         return 1
 
+    pygame.init()
+    if not args.resolution:
+        disp_info = pygame.display.Info()
+        width, height = disp_info.current_w, disp_info.current_h
+
+    log.info("Using screen resolution: {}x{}".format(width, height))
+
     with guncon2_dev.grab_context():
 
         guncon = Guncon2(guncon2_dev)
 
-        pygame.init()
         pygame.font.init()
         font = pygame.font.Font(None, 20)
 
@@ -194,7 +202,7 @@ def main():
 
         state = STATE_START
         running = True
-        targets = [(50, 50), (320 - 50, 50), (320 - 50, 240 - 50), (50, 240 - 50)]
+        targets = [(50, 50), (width - 50, 50), (width - 50, height - 50), (50, height - 50)]
         target_shots = [(0, 0), (0, 0), (0, 0), (0, 0)]
 
         cursor = draw_cursor(color=(255, 255, 0))
