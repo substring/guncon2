@@ -23,6 +23,7 @@ class Guncon2(object):
     def __init__(self, device):
         self.device = device
         self.pos = Postion(0, 0)
+        self.center = Postion(self.max_x/2, self.max_y/2)
 
     @property
     def absinfo(self):
@@ -62,7 +63,11 @@ class Guncon2(object):
                         self.pos = Postion(ev.value, self.pos.y)
                     elif ev.code == ecodes.ABS_Y:
                         self.pos = Postion(self.pos.x, ev.value)
+                    elif ev.code in (ecodes.ABS_HAT0X, ecodes.ABS_HAT0Y):
+                        self.recompute_min_max(ev.code, ev.value)
                 if ev.type == ecodes.EV_KEY:
+                    if ev.value == 1:
+                        self.recompute_fuzz(ev.code)
                     yield ev.code, ev.value
             else:
                 break
@@ -97,6 +102,37 @@ class Guncon2(object):
 
         log.info(f"Calibration: x=({self.absinfo[0]}) y=({self.absinfo[1]})")
 
+    def recompute_min_max(self, axis, direction):
+        if direction == 0: return
+        min_x = self.absinfo[0].min
+        max_x = self.absinfo[0].max
+        min_y = self.absinfo[1].min
+        max_y = self.absinfo[1].max
+        if axis == ecodes.ABS_HAT0X:
+            if self.pos[0]  < self.center[0]:
+                min_x -= direction
+            else:
+                max_x -= direction
+        elif axis == ecodes.ABS_HAT0Y:
+            if self.pos[1]  < self.center[1]:
+                min_y -= direction
+            else:
+                max_y -= direction
+        self.device.set_absinfo(ecodes.ABS_X, min=int(min_x), max=int(max_x))
+        self.device.set_absinfo(ecodes.ABS_Y, min=int(min_y), max=int(max_y))
+
+    def recompute_fuzz(self, button):
+        if button == ecodes.BTN_SELECT:
+            x_new_fuzz = self.absinfo[0].fuzz + 1
+            y_new_fuzz = self.absinfo[1].fuzz + 1
+        elif button ==  ecodes.BTN_START:
+            x_new_fuzz = self.absinfo[0].fuzz - 1
+            y_new_fuzz = self.absinfo[1].fuzz - 1
+        else:
+            return 1
+        print(f"New fuzz: {x_new_fuzz} {y_new_fuzz}")
+        self.device.set_absinfo(ecodes.ABS_X, fuzz = x_new_fuzz)
+        self.device.set_absinfo(ecodes.ABS_Y, fuzz = y_new_fuzz)
 
 WIDTH = 320
 HEIGHT = 240
@@ -190,6 +226,7 @@ def main():
         guncon = Guncon2(guncon2_dev)
 
         pygame.font.init()
+        pygame.mouse.set_visible(False)
         font = pygame.font.Font(None, 20)
 
         start_text = font.render("Pull the TRIGGER to start calibration", True, WHITE)
@@ -270,6 +307,8 @@ def main():
 
             pygame.display.flip()
             clock.tick(30)
+
+        log.info(f"Calibration: x=({guncon.absinfo[0]}) y=({guncon.absinfo[1]})")
 
 
 if __name__ == "__main__":
