@@ -23,9 +23,9 @@ get_calibration_value() {
 
   # The line should look like "INFO:guncon2-calibration:Calibration: x=(val 280, min 169, max 745, fuzz 5, flat 0, res 0) y=(val 185, min 31, max 263, fuzz 5, flat 0, res 0)"
   if [[ $axis == x ]] ; then
-    echo "$calibration_text" | cut -d '=' -f2 | egrep -o "$param [0-9]+" | sed "s/$param //"
+    echo "$calibration_text" | cut -d '=' -f2 | grep -E  -o "$param [0-9]+" | sed "s/$param //"
   elif [[ $axis == y ]] ; then
-    echo "$calibration_text" | cut -d '=' -f3 | egrep -o "$param [0-9]+" | sed "s/$param //"
+    echo "$calibration_text" | cut -d '=' -f3 | grep -E  -o "$param [0-9]+" | sed "s/$param //"
   else
     return 1
   fi
