@@ -18,12 +18,13 @@ log = logging.getLogger("guncon2-calibration")
 
 Postion = namedtuple("Postion", ["x", "y"])
 
-
 class Guncon2(object):
     def __init__(self, device):
         self.device = device
         self.pos = Postion(0, 0)
         self.center = Postion(self.max_x/2, self.max_y/2)
+        self.directionX = 0
+        self.directionY = 0
 
     @property
     def absinfo(self):
@@ -65,11 +66,19 @@ class Guncon2(object):
                         self.pos = Postion(self.pos.x, ev.value)
                     elif ev.code in (ecodes.ABS_HAT0X, ecodes.ABS_HAT0Y):
                         self.recompute_min_max(ev.code, ev.value)
+                        if ev.code == ecodes.ABS_HAT0X:
+                            self.directionX = ev.value
+                        if ev.code == ecodes.ABS_HAT0Y:
+                            self.directionY = ev.value
                 if ev.type == ecodes.EV_KEY:
                     if ev.value == 1:
                         self.recompute_fuzz(ev.code)
                     yield ev.code, ev.value
             else:
+                if bool(self.directionX) :
+                    self.recompute_min_max(ecodes.ABS_HAT0X, self.directionX)
+                if bool(self.directionY) :
+                    self.recompute_min_max(ecodes.ABS_HAT0Y, self.directionY)
                 break
 
     def calibrate(self, targets, shots, width=320, height=240):
@@ -130,7 +139,6 @@ class Guncon2(object):
             y_new_fuzz = self.absinfo[1].fuzz - 1
         else:
             return 1
-        print(f"New fuzz: {x_new_fuzz} {y_new_fuzz}")
         self.device.set_absinfo(ecodes.ABS_X, fuzz = x_new_fuzz)
         self.device.set_absinfo(ecodes.ABS_Y, fuzz = y_new_fuzz)
 
